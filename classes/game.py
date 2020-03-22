@@ -121,7 +121,7 @@ class Person:
         while goodChoice == False:
             choice = int(input(Bcolors.OKBLUE + "Choose item:" + Bcolors.ENDC)) -1
             if choice >= -1 and choice < len(self.items):
-                if self.items[choice]["quantity"] == 0:
+                if self.items[choice]["quantity"] == 0 and choice >= 0:
                     print("This character doesn't have any those items")
                 else:
                     goodChoice = True

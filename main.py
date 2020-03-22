@@ -5,15 +5,15 @@ import random
 
 
 #create black magic
-fire = Spell("Fire", 10, 100, "black")
-thunder = Spell("Thunder", 10, 100, "black")
-blizzard = Spell("Blizzard", 10, 100, "black")
-meteor = Spell("Meteor", 20, 200, "black")
-quake = Spell("Quake", 14, 140, "black")
+fire = Spell("Fire", 20, 300, "black")
+thunder = Spell("Thunder", 20, 300, "black")
+blizzard = Spell("Blizzard", 20, 300, "black")
+meteor = Spell("Meteor", 40, 600, "black")
+quake = Spell("Quake", 28, 320, "black")
 
 #create white magic
-cure = Spell("Cure", 12, 120, "white")
-cura = Spell("Cura", 18, 200, "white")
+cure = Spell("Cure", 20, 240, "white")
+cura = Spell("Cura", 30, 500, "white")
 
 #create some items
 potion = Item("Potion", "potion", "Heals 50 HP", 50)
@@ -39,14 +39,18 @@ player3Items = [{"item": potion, "quantity": 5}, {"item": hiPotion, "quantity": 
                 {"item": superPotion, "quantity": 3}, {"item": elixer, "quantity": 5},
                 {"item": hiElixer, "quantity": 2}, {"item": grenade, "quantity": 2}]
 
+enemy1Items = [{"item": potion, "quantity": 5}, {"item": grenade, "quantity": 2}]
+enemy2Items = [{"item": hiElixer, "quantity": 2}]
+enemy3Items = [{"item": superPotion, "quantity": 3}, {"item": elixer, "quantity": 5}]
+
 #instantiate people
 player1 = Person("Valos", 3260, 65, 60, 34, playerMagic, player1Items)
 player2 = Person("Nick", 1000, 65, 60, 34, playerMagic, player2Items)
 player3 = Person("Robot", 5000, 65, 60, 34, playerMagic, player3Items)
 
-enemy1 = Person("Imp", 1250, 130, 560, 325, [], [])
-enemy2 = Person("Badass", 20000, 1000, 400, 100, [], [])
-enemy3 = Person("Imp", 1250, 130, 560, 325, [], [])
+enemy1 = Person("Imp", 1250, 130, 560, 325, playerMagic, enemy1Items)
+enemy2 = Person("Badass", 20000, 1000, 400, 100, playerMagic, enemy2Items)
+enemy3 = Person("Imp", 1250, 130, 560, 325, playerMagic, enemy3Items)
 
 players = [player1, player2, player3]
 enemies = [enemy1, enemy2, enemy3]
@@ -106,6 +110,7 @@ while running:
 
             if cost > currentMp:
                 print(Bcolors.FAIL + "\nNot enough MP!", player.name, "has only", str(player.getMp()) + "\\" + str(player.getMaxMp()) + "\n" + Bcolors.ENDC)
+                back = len(players) + len(enemies) - 1
                 continue
             
             player.reduceMp(cost)
@@ -132,6 +137,7 @@ while running:
             
             if item["quantity"] == 0:
                 print(Bcolors.FAIL + "\n" + player.name, "doesn't have any", item["item"].name + "\n" + Bcolors.ENDC)
+                back = len(players) + len(enemies) - 1
                 continue
             else:
                 player.items[itemChoice]["quantity"] -= 1
@@ -175,7 +181,14 @@ while running:
                 if players[hitPlayer].hp == 0:
                         del players[hitPlayer]
             elif enemyChoice == 1:
+                if not enemy.magic:
+                    back = len(players) + len(enemies) - 1
+                    continue
+
                 magicChoice = random.randrange(0, len(enemy.magic))
+
+                while enemy.magic[magicChoice].type == "white" and enemy.hp >= int((enemy.maxHp / 80)):
+                    magicChoice = random.randrange(0, len(enemy.magic))
 
                 spell = enemy.magic[magicChoice]
                 magicHp = spell.generateDamage()
@@ -184,6 +197,7 @@ while running:
                 currentMp = enemy.getMp()
 
                 if cost > currentMp:
+                    back = len(players) + len(enemies) - 1
                     continue
                 
                 enemy.reduceMp(cost)
@@ -197,7 +211,43 @@ while running:
                     print(Bcolors.FAIL + "\n" + enemy.name + " casts " + spell.name + " and attacks", players[target].name, "for", str(magicHp), "points of damage." + Bcolors.ENDC)
                     if players[target].hp == 0:
                         del players[target]
-            #elif enemyChoice == 2:
+            elif enemyChoice == 2:
+                if not enemy.items:
+                    back = len(players) + len(enemies) - 1
+                    continue
+
+                itemChoice = random.randrange(0, len(enemy.items))
+                
+                while (enemy.items[itemChoice].type == "potion" or enemy.items[itemChoice.type == "elixer"]) and enemy.hp >= int((enemy.maxHp / 80)):
+                    magicChoice = random.randrange(0, len(enemy.magic))
+                
+                item = enemy.items[itemChoice]
+                
+                if item["quantity"] == 0:
+                    back = len(players) + len(enemies) - 1
+                    continue
+                else:
+                    enemy.items[itemChoice]["quantity"] -= 1
+                
+                if item["item"].type == "potion":
+                    enemy.heal(item["item"].prop)
+                    print(Bcolors.OKGREEN + "\n" + item["item"].name + " heals " + enemy.name + " for", str(item["item"].prop), "HP" + Bcolors.ENDC)
+                elif item["item"].type == "elixer":
+                    if item["item"].name == "Hi-Elixer":
+                        for i in enemies:
+                            i.hp = i.maxHp
+                            i.mp = i.maxMp
+                        print(Bcolors.OKGREEN + "\n" + item["item"].name + " fully restores every enemy's HP and MP" + Bcolors.ENDC)
+                    else:
+                        enemy.hp = enemy.maxHp
+                        enemy.mp = enemy.maxMp
+                        print(Bcolors.OKGREEN + "\n" + item["item"].name + " fully restores " + enemy.name + "'s HP and MP" + Bcolors.ENDC)
+                elif item["item"].type =="attack":
+                    target = random.randrange(0, len(players))
+                    players[target].takeDamage(item["item"].prop)
+                    print(Bcolors.OKGREEN + "\n" + enemy.name + " uses " + item["item"].name + " and attacks", players[target].name, "for", str(item["item"].prop), "points of damage." + Bcolors.ENDC)
+                    if players[target].hp == 0:
+                        del players[target]
 
     if enemy1.getHp() == 0 and enemy2.getHp() == 0 and enemy3.getHp() == 0:
         enemiesAlive = False
