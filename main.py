@@ -1,4 +1,4 @@
-from classes.game import DataLoader, JsonLoader, Config, MessageGenerator, Menu, Statistics, Actions, CheckAlive
+from classes.game import DataLoader, JsonLoader, Config, MessageGenerator, CompatiblityMessageGenerator, Menu, Statistics, Actions, CheckAlive, SelectMessage
 from classes.character import Character
 from classes.magic import Spell
 from classes.inventory import Item, ItemManager
@@ -9,7 +9,13 @@ from termcolor import colored, cprint
 running = True
 
 while running:
-    message = MessageGenerator()
+
+    messageSelect = SelectMessage.get()
+    if messageSelect == 1:
+        message = MessageGenerator()
+    else:
+        message = CompatiblityMessageGenerator()
+
     menu = Menu(message)
 
     mainMenu = ["Start a game", "Get help", "Exit"]

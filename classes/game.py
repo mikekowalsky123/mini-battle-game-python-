@@ -98,6 +98,12 @@ class MessageGeneratorInterface:
     def characterAttributes(self, attrName, attrValue):
         raise NotImplementedError
 
+    def players(self):
+        raise NotImplementedError    
+
+    def enemies(self):
+        raise NotImplementedError    
+
 class MessageGenerator(MessageGeneratorInterface):
     def attack(self, attacker, target, value):
         cprint(attacker.getName() + " attacks " + target.getName() + " for " + str(value) + ".", "red")
@@ -142,6 +148,63 @@ class MessageGenerator(MessageGeneratorInterface):
     def characterAttributes(self, attrName, attrValue):
         cprint(attrName + ":", attrs=['bold'], end=' ')
         cprint(str(attrValue), end=', ')
+    
+    def players(self):
+        cprint("\nPlayers:", "green", attrs=['bold'])
+    
+    def enemies(self):
+        cprint("\nEnemies:", "red", attrs=['bold'])
+
+class CompatiblityMessageGenerator(MessageGeneratorInterface):
+    def attack(self, attacker, target, value):
+        print(attacker.getName() + " attacks " + target.getName() + " for " + str(value) + ".")
+    
+    def heal(self, healed, value):
+        print(healed.getName() + " has been healed for " + str(value) + ".")
+
+    def castSpell(self, caster, spell):
+        print(caster.getName() + " casts " + spell.getName() + "!")
+
+    def notEnoughMp(self, caster):
+        print(caster.getName() + " does not have enough MP")
+
+    def useItem(self, user, item):
+        print(user.getName() + " uses " + item.getName() + "!")
+
+    def died(self, character):
+        print(character.getName() + " has been killed.")
+    
+    def headline(self, message):
+        print(message)
+    
+    def menuElement(self, index, message):
+        print("\t" + str(index) + ". " + message)
+    
+    def statElement(self, name, hpTopBar, mpTopBar, hpBar, mpBar, hp, mp):
+        print("                            " + hpTopBar, end="              ")
+        print(mpTopBar)
+        print(name, end="")
+        print(hp + " |" + hpBar + "|", end="  ")
+        print(mp + "  |" + mpBar + "|")
+
+    def usedElixer(self, user):
+        print(user.getName() + "'s HP and MP have been restored!")
+    
+    def playerTurn(self):
+        print("\nPlayer turn.")
+
+    def enemyTurn(self):
+        print("\nEnemy turn.")
+    
+    def characterAttributes(self, attrName, attrValue):
+        print(attrName + ":", end=' ')
+        print(str(attrValue), end=', ')
+    
+    def players(self):
+        print("\nPlayers:")
+    
+    def enemies(self):
+        print("\nEnemies:")
 
 class MenuInterface:
     def __init__(self, message):
@@ -237,10 +300,8 @@ class Statistics():
         self.message.statElement(name, hpTopBar, mpTopBar, hpBar, mpBar, currentHp, currentMp)
     
     def getStats(self, players, enemies):
-        cprint("\nPlayers:", "green", attrs=['bold'])
         for player in players:
             self.generateStat(player)
-        cprint("\nEnemies:", "red", attrs=['bold'])
         for enemy in enemies:
             self.generateStat(enemy)
     
@@ -308,5 +369,12 @@ class CheckAlive:
         return dead
         
 
-
+class SelectMessage:
+    @staticmethod
+    def get():
+        print("Do you want:")
+        print("1. Colours")
+        print("2. Without colours (compatibility option)")
+        choice = int(input("Type option:"))
+        return choice
 
