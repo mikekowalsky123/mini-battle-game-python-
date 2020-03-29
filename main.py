@@ -1,4 +1,5 @@
-from classes.game import Person, Bcolors
+from classes.game import Bcolors
+from classes.person import Person
 from classes.magic import Spell
 from classes.inventory import Item
 import random
