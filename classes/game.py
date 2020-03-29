@@ -1,165 +1,196 @@
+import simplejson as json
+import os
 import random
 import math
+from termcolor import colored, cprint
 
-class Bcolors:
-    HEADER = '\033[95m'
-    OKBLUE = '\033[94m'
-    OKGREEN = '\033[92m'
-    WARNING = '\033[93m'
-    FAIL = '\033[91m'
-    ENDC = '\033[0m'
-    BOLD = '\033[1m'
-    UNDERLINE = '\033[4m'
+class DataLoader:
+    data = None
+    def openData(self, path):
+        raise NotImplementedError
+    def getData(self):
+        raise NotImplementedError
 
-class Person:
-    def __init__(self, name, hp, mp, atk, df, magic, items):
-        self.name = name
-        self.maxHp = hp
-        self.hp = hp
-        self.maxMp = mp
-        self.mp = mp
-        self.atkl = atk - 10
-        self.atkh = atk + 10
-        self.df = df
-        self.magic = magic
-        self.items = items
-        self.actions = ['Attack', 'Magic', 'Items']
-    
-    def generateDamage(self):
-        return random.randrange(self.atkl, self.atkh)
 
-    def generateSpellDamage(self, i):
-        mgl = self.magic[i]["dmg"] - 5
-        mgh = self.magic[i]["dmg"] + 5
-        return random.randrange(mgl, mgh)
-
-    def takeDamage(self, dmg):
-        self.hp -= dmg
-        if(self.hp < 0):
-            self.hp = 0
-        return self.hp
-    
-    def getHp(self):
-        return self.hp
-    
-    def getMaxHp(self):
-        return self.maxHp
-    
-    def getMp(self):
-        return self.mp
-    
-    def getMaxMp(self):
-        return self.maxMp
-    
-    def reduceMp(self, cost):
-        self.mp -= cost
-    
-    def heal(self, hp):
-        self.hp += hp
-        if self.hp > self.maxHp:
-            self.hp = self.maxHp
-    
-    def gainMp(self, mp):
-        if self.mp < self.maxMp:
-            self.mp += mp
-            if self.mp > self.maxMp:
-                self.mp = self.maxMp
-            return mp
+class JsonLoader(DataLoader):
+    def openData(self, path):
+        if os.path.isfile(path) and os.stat(path).st_size != 0:
+            self.data = open(path)
+        return self
+    def getData(self):
+        if self.data:
+            return json.loads(self.data.read())
         else:
-            return 0
-
-    def chooseAction(self):
-        i = 1
-        print("\n" + Bcolors.BOLD + "Character:", self.name + Bcolors.ENDC)
-        print(Bcolors.OKBLUE + Bcolors.BOLD + "Actions:" + Bcolors.ENDC)
-
-        for item in self.actions:
-            print("    " + str(i) + ".", item)
-            i += 1
+            return None
         
 
-        goodChoice = False
-        
-        while goodChoice == False:
-            choice = int(input(Bcolors.OKBLUE + "Choose action:" + Bcolors.ENDC)) -1
-            if choice >= 0 and choice < len(self.actions):
-                goodChoice = True
-            else:
-                print("There is no action like this!")
-        
-        return choice
+class Config:
+    def __init__(self, configPath: str, dataLoader: DataLoader):
+        self.configPath = configPath
+        self.dataLoader = dataLoader
     
-    def chooseMagic(self):
-        print("\n" + Bcolors.OKBLUE + Bcolors.BOLD + "Magic:" + Bcolors.ENDC)
-        i = 1
-        for spell in self.magic:
-            print("    " + str(i) + ".", spell.name, "(cost:", str(spell.cost) + ")")
-            i += 1
-        print("Type 0 to back to actions")
-        
-        goodChoice = False
-        
-        while goodChoice == False:
-            choice = int(input(Bcolors.OKBLUE + "Choose spell:" + Bcolors.ENDC)) -1
-            if choice >= -1 and choice < len(self.magic):
-                goodChoice = True
-            else:
-                print("There is no spell like this!")
-        
-        return choice
+    def loadConfigs(self):
+        self.spellsList = self.dataLoader.openData(self.configPath + "spells.json").getData()
+        self.itemsList = self.dataLoader.openData(self.configPath + "items.json").getData()
+        self.playersList = self.dataLoader.openData(self.configPath + "players.json").getData()
+        self.enemiesList = self.dataLoader.openData(self.configPath + "enemies.json").getData()
     
-    def chooseItem(self):
-        i = 1
-        print("\n" + Bcolors.OKGREEN + Bcolors.BOLD + "Items:" + Bcolors.ENDC)
-        for item in self.items:
-            print("    " + str(i) + ".", item["item"].name, ":", item["item"].descr, "(x" + str(item["quantity"]) + ")")    
-            i+=1
-        print("Type 0 to back to actions")
-
-        goodChoice = False
-        
-        while goodChoice == False:
-            choice = int(input(Bcolors.OKBLUE + "Choose item:" + Bcolors.ENDC)) -1
-            if choice >= -1 and choice < len(self.items):
-                if self.items[choice]["quantity"] == 0 and choice >= 0:
-                    print("This character doesn't have any those items")
-                else:
-                    goodChoice = True
-            else:
-                print("There is no action like this!")
-        
-        return choice
-
-    def chooseTarget(self, enemies):
-        i = 1
-        print("\n" + Bcolors.FAIL + Bcolors.BOLD + "Target:" + Bcolors.ENDC)
-        for enemy in enemies:
-            print("    " + str(i) + ". " + enemy.name)
-            i += 1
-        print("Type 0 to back to actions")
-        
-        goodChoice = False
-        
-        while goodChoice == False:
-            choice = int(input(Bcolors.OKBLUE + "Choose target:" + Bcolors.ENDC)) -1
-            if choice >= -1 and choice < len(enemies):
-                goodChoice = True
-            else:
-                print("There is no enemy like this!")
-        
-        return choice
     
-    def getStats(self):
-        hpTicks = math.ceil((self.hp / self.maxHp) * 100 / 4)
-        mpTicks = math.ceil((self.mp / self.maxMp) * 100 / 5)
+    def getSpells(self):
+        return self.spellsList
+
+    def getItems(self):
+        return self.itemsList
+
+    def getPlayers(self):
+        return self.playersList
+
+    def getEnemies(self):
+        return self.enemiesList
+
+class RandomGeneratorInterface:
+    def generate(self, value, minPercent, maxPercent):
+        raise NotImplementedError
+
+class RandomValuesGenerator(RandomGeneratorInterface):
+    def generate(self, value, minPercent = 0.95, maxPercent = 1.05):
+        minValue = round(value * minPercent)
+        maxValue = round(value * maxPercent)
+        return random.randint(minValue, maxValue)
+
+class MessageGeneratorInterface:
+    def attack(self, attacker, target, value):
+        raise NotImplementedError
+    
+    def heal(self, healed, value):
+        raise NotImplementedError
+
+    def castSpell(self, caster, spell):
+        raise NotImplementedError
+
+    def notEnoughMp(self, caster):
+        raise NotImplementedError
+
+    def useItem(self, user, item):
+        raise NotImplementedError
+
+    def died(self, character):
+        raise NotImplementedError
+    
+    def headline(self, message):
+        raise NotImplementedError
+
+    def menuElement(self, index, message):
+        raise NotImplementedError
+
+    def statElement(self, hpTopBar, mpTopBar, hpBar, mpBar, hp, mp):
+        raise NotImplementedError
+    
+    def usedElixer(self):
+        raise NotImplementedError
+    
+    def playerTurn(self):
+        raise NotImplementedError
+
+    def enemyTurn(self):
+        raise NotImplementedError
+
+    def characterAttributes(self, attrName, attrValue):
+        raise NotImplementedError
+
+class MessageGenerator(MessageGeneratorInterface):
+    def attack(self, attacker, target, value):
+        cprint(attacker.getName() + " attacks " + target.getName() + " for " + str(value) + ".", "red")
+    
+    def heal(self, healed, value):
+        cprint(healed.getName() + " has been healed for " + str(value) + ".", "green")
+
+    def castSpell(self, caster, spell):
+        cprint(caster.getName() + " casts " + spell.getName() + "!", "blue")
+
+    def notEnoughMp(self, caster):
+        cprint(caster.getName() + " does not have enough MP", "blue")
+
+    def useItem(self, user, item):
+        cprint(user.getName() + " uses " + item.getName() + "!", "yellow")
+
+    def died(self, character):
+        cprint(character.getName() + " has been killed.", "red", attrs=['bold'])
+    
+    def headline(self, message):
+        cprint(message, "white", attrs=['bold'])
+    
+    def menuElement(self, index, message):
+        print("\t" + str(index) + ". " + message)
+    
+    def statElement(self, name, hpTopBar, mpTopBar, hpBar, mpBar, hp, mp):
+        cprint("                            " + hpTopBar, "red", attrs=['bold'], end="              ")
+        cprint(mpTopBar, "blue", attrs=['bold'])
+        cprint(name, "white", attrs=['bold'], end="")
+        cprint(hp + " |" + hpBar + "|", "red", attrs=['bold'], end="  ")
+        cprint(mp + "  |" + mpBar + "|", "blue", attrs=['bold'])
+
+    def usedElixer(self, user):
+        cprint(user.getName() + "'s HP and MP have been restored!", "cyan")
+    
+    def playerTurn(self):
+        cprint("\nPlayer turn.", "green", attrs=['bold'])
+
+    def enemyTurn(self):
+        cprint("\nEnemy turn.", "red", attrs=['bold'])
+    
+    def characterAttributes(self, attrName, attrValue):
+        cprint(attrName + ":", attrs=['bold'], end=' ')
+        cprint(str(attrValue), end=', ')
+
+class MenuInterface:
+    def __init__(self, message):
+        raise NotImplementedError
+
+    def display(self, name, elements):
+        raise NotImplementedError
+
+    def getChoice(self, name, elements):
+        raise NotImplementedError
+
+class Menu(MenuInterface):
+    def __init__(self, message):
+        self.message = message
+    
+    def display(self, name, elements):
+        i = 1
+        self.message.headline(name)
+        for element in elements:
+            self.message.menuElement(i, element)
+            i += 1
+    
+    def getChoice(self, elements, toPrompt):
+        correct = False
+        while not correct:
+            choice = int(input(toPrompt + ": ")) - 1
+            
+            if choice >= 0 and choice < len(elements):
+                correct = True
+            else:
+                print("There is no option: " + str(choice))
+        
+        return choice
+
+class Statistics():
+    def __init__(self, message):
+        self.message = message
+
+    def generateStat(self, character):
+        hpTicks = math.ceil((character.getHp() / character.getMaxHp()) * 100 / 4)
+        mpTicks = math.ceil((character.getMp() / character.getMaxMp()) * 100 / 5)
 
         hpTopBar = ""
         mpTopBar = ""
         hpBar = ""
         mpBar = ""
 
-        hpString = str(self.hp) + "/" + str(self.maxHp)
-        mpString = str(self.mp) + "/" + str(self.maxMp)
+        hpString = str(character.getHp()) + "/" + str(character.getMaxHp())
+        mpString = str(character.getMp()) + "/" + str(character.getMaxMp())
 
         while hpTicks > 0:
             hpBar += "█"
@@ -177,7 +208,8 @@ class Person:
             mpBar += " "
             mpTopBar += "_"
 
-        name = self.name
+        name = character.getName()
+
         if len(name) < 16:
             decreased = 16 - len(name)
             while decreased > 0:
@@ -194,53 +226,87 @@ class Person:
         currentHp += hpString
 
         currentMp = ""
-        if len(mpString) < 8:
-            decreased = 8 - len(mpString)
+        if len(mpString) < 10:
+            decreased = 10 - len(mpString)
             while decreased > 0:
                 currentMp += " "
                 decreased -= 1
         
         currentMp += mpString
 
-        print(Bcolors.BOLD + Bcolors.OKGREEN + "                            " + hpTopBar + "              " + Bcolors.OKBLUE + mpTopBar + Bcolors.ENDC)
-        print(name
-            + Bcolors.OKGREEN + currentHp + " |" + hpBar + "|  "
-            + Bcolors.OKBLUE + currentMp + "  |" + mpBar + "| \n"
-            + Bcolors.ENDC)
+        self.message.statElement(name, hpTopBar, mpTopBar, hpBar, mpBar, currentHp, currentMp)
     
-    def getEnemyStats(self):
-        hpTicks = math.ceil((self.hp / self.maxHp) * 100 / 2)
-
-        hpTopBar = ""
-        hpBar = ""
-
-        hpString = str(self.hp) + "/" + str(self.maxHp)
-
-        while hpTicks > 0:
-            hpBar += "█"
-            hpTopBar += "_"
-            hpTicks -= 1
-        while len(hpBar) < 50:
-            hpBar += " "
-            hpTopBar += "_"
-
-        name = self.name
-        if len(name) < 16:
-            decreased = 16 - len(name)
-            while decreased > 0:
-                name += " "
-                decreased -= 1
-
-        currentHp = ""
-        if len(hpString) < 12:
-            decreased = 12 - len(hpString)
-            while decreased > 0:
-                currentHp += " "
-                decreased -= 1
+    def getStats(self, players, enemies):
+        cprint("\nPlayers:", "green", attrs=['bold'])
+        for player in players:
+            self.generateStat(player)
+        cprint("\nEnemies:", "red", attrs=['bold'])
+        for enemy in enemies:
+            self.generateStat(enemy)
+    
+    def getAttrs(self, party):
+        for member in party:
+            print(member.getName() + ":")
+            self.message.characterAttributes("Normal attack", member.getAtk())
+            self.message.characterAttributes("Defense", member.getDf())
+            print("\n")
         
-        currentHp += hpString
 
-        print(Bcolors.BOLD + Bcolors.FAIL + "                              " + hpTopBar + Bcolors.ENDC)
-        print(name
-            + Bcolors.FAIL + currentHp + " |" + hpBar + "|  "
-            + Bcolors.ENDC)
+class Actions:
+    def __init__(self, message: MessageGeneratorInterface):
+        self.message = message
+    
+    def attack(self, attacker, target, value):
+        minValue = round(value * 0.95)
+        maxValue = round(value * 1.05)
+
+        value = random.randint(minValue, maxValue)
+
+        self.message.attack(attacker, target, value)
+        target.setHp(target.getHp() - value)
+    
+    def heal(self, healed, value):
+        self.message.heal(healed, value)
+        healed.setHp(healed.getHp() + value)
+
+    def elixer(self, user):
+        user.setHp(user.getMaxHp()).setMp(user.getMaxMp())
+        self.message.usedElixer(user)
+    
+    def castSpell(self, caster, spell, isPlayer = False):
+        if spell.castSpell(caster):
+            if isPlayer:
+                self.message.castSpell(caster, spell)
+            return True
+        else:
+            self.message.notEnoughMp(caster)
+            return False
+    
+    def useItem(self, user, item, i, isPlayer = False):
+        if item.use():
+            self.message.useItem(user, item.getItem())
+            user.setItemsQuantity(i, user.getItemsQuantity(i) - 1)
+            return True
+        else:
+            return False
+
+class CheckAlive:
+    @staticmethod
+    def getAlive(party):
+        alive = []
+        for member in party:
+            if member.getHp() > 0:
+                alive.append(member)
+        return alive
+    
+    @staticmethod
+    def getDead(dead, party, messanger):
+        for member in party:
+            if member.getHp() == 0:
+                messanger.died(member)
+                dead.append(member)
+        return dead
+        
+
+
+

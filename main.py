@@ -1,261 +1,304 @@
-from classes.game import Bcolors
-from classes.person import Person
+from classes.game import DataLoader, JsonLoader, Config, MessageGenerator, Menu, Statistics, Actions, CheckAlive
+from classes.character import Character
 from classes.magic import Spell
-from classes.inventory import Item
+from classes.inventory import Item, ItemManager
+import time
 import random
+from termcolor import colored, cprint
 
-
-#create black magic
-fire = Spell("Fire", 20, 300, "black")
-thunder = Spell("Thunder", 20, 300, "black")
-blizzard = Spell("Blizzard", 20, 300, "black")
-meteor = Spell("Meteor", 40, 600, "black")
-quake = Spell("Quake", 28, 320, "black")
-
-#create white magic
-cure = Spell("Cure", 20, 240, "white")
-cura = Spell("Cura", 30, 500, "white")
-
-#create some items
-potion = Item("Potion", "potion", "Heals 50 HP", 50)
-hiPotion = Item("Hi-Potion", "potion", "Heals 100 HP", 100)
-superPotion = Item("Super Potion", "potion", "Heals 500 HP", 500)
-elixer = Item("Elixer", "elixer", "Fully restores HP/MP of one party member", 9999)
-hiElixer = Item("Hi-Elixer", "elixer", "Fully restores party's HP/MP", 9999)
-
-grenade = Item("Grenade", "attack", "Deals 500 damage", 500)
-
-playerMagic = [fire, thunder, blizzard, meteor, quake, cure, cura]
-playerItems = [{"item": potion, "quantity": 5}, {"item": hiPotion, "quantity": 2},
-                {"item": superPotion, "quantity": 3}, {"item": elixer, "quantity": 5},
-                {"item": hiElixer, "quantity": 2}, {"item": grenade, "quantity": 2}]
-
-player1Items = [{"item": potion, "quantity": 5}, {"item": hiPotion, "quantity": 2},
-                {"item": superPotion, "quantity": 3}, {"item": elixer, "quantity": 5},
-                {"item": hiElixer, "quantity": 2}, {"item": grenade, "quantity": 2}]
-player2Items = [{"item": potion, "quantity": 5}, {"item": hiPotion, "quantity": 2},
-                {"item": superPotion, "quantity": 3}, {"item": elixer, "quantity": 5},
-                {"item": hiElixer, "quantity": 2}, {"item": grenade, "quantity": 2}]
-player3Items = [{"item": potion, "quantity": 5}, {"item": hiPotion, "quantity": 2},
-                {"item": superPotion, "quantity": 3}, {"item": elixer, "quantity": 5},
-                {"item": hiElixer, "quantity": 2}, {"item": grenade, "quantity": 2}]
-
-enemy1Items = [{"item": potion, "quantity": 5}, {"item": grenade, "quantity": 2}]
-enemy2Items = [{"item": hiElixer, "quantity": 2}]
-enemy3Items = [{"item": superPotion, "quantity": 3}, {"item": elixer, "quantity": 5}]
-
-#instantiate people
-player1 = Person("Valos", 3260, 65, 60, 34, playerMagic, player1Items)
-player2 = Person("Nick", 1000, 65, 60, 34, playerMagic, player2Items)
-player3 = Person("Robot", 5000, 65, 60, 34, playerMagic, player3Items)
-
-enemy1 = Person("Imp", 1250, 130, 560, 325, playerMagic, enemy1Items)
-enemy2 = Person("Badass", 20000, 1000, 400, 100, playerMagic, enemy2Items)
-enemy3 = Person("Imp", 1250, 130, 560, 325, playerMagic, enemy3Items)
-
-players = [player1, player2, player3]
-enemies = [enemy1, enemy2, enemy3]
-
-print(len(players))
-
-playersAlive = True
-enemiesAlive = True
 running = True
-i = 0
-back = 0
-
-
-print(Bcolors.FAIL + Bcolors.BOLD + "AN ENEMY ATTACKS!" + Bcolors.ENDC)
 
 while running:
-    for player in players:
-        if back > 0:
-            back -=1
-            continue
-        if player.hp == 0:
-            continue
+    message = MessageGenerator()
+    menu = Menu(message)
+
+    mainMenu = ["Start a game", "Get help", "Exit"]
+    menu.display("Main Menu", mainMenu)
+    mainMenuChoice = menu.getChoice(mainMenu, "Select option")
+
+    if mainMenuChoice == 0:
+        fight = True
         
-        print("==================")
-        print(Bcolors.BOLD + Bcolors.OKGREEN + "\nPlayers:" + Bcolors.ENDC)
-        print(Bcolors.BOLD + "NAME                        " + Bcolors.OKGREEN + "HP                                     " + Bcolors.OKBLUE + "MP" + Bcolors.ENDC)
-        for i in players:
-            i.getStats()
-        print(Bcolors.BOLD + Bcolors.FAIL + "\nEnemies:" + Bcolors.ENDC)
-        for i in enemies:
-            i.getEnemyStats()
+        print("Loading configuration...")
+
+        dataLoader = JsonLoader()
+
+        config = Config("./config/", dataLoader)
+        config.loadConfigs()
+
+        stats = Statistics(message)
+
+        actions = Actions(message)
+
+        actionElements = ["Attack", "Cast spell", "Use item", "Check characters' statistics"]
+
+        players = []
+        enemies = []
+        spells = []
+        items = []
+
+        for spell in config.getSpells():
+            spells.append(Spell(spell["name"], spell["cost"], spell["value"], spell["school"]))
+
+        for item in config.getItems():
+            items.append(Item(item["name"], item["itemType"], item["description"], item["value"]))
+
+        for player in config.getPlayers():
+            players.append(Character(player["name"], player["hp"], player["mp"],
+                            player["atk"], player["df"], player["spells"], player["items"]))
+
+        for enemy in config.getEnemies():
+            enemies.append(Character(enemy["name"], enemy["hp"], enemy["mp"],
+                            enemy["atk"], enemy["df"], enemy["spells"], enemy["items"]))
         
-        index = player.chooseAction()
+        alivePlayers = players
+        aliveEnemies = enemies
+        deadPlayers = []
+        deadEnemies = []
+
+        #time.sleep(3)
         
-        if index == 0:
-            dmg = player.generateDamage()
-            target = player.chooseTarget(enemies)
-            if target == -1:
-                back = len(players) + len(enemies) - 1
-                continue
-            enemies[target].takeDamage(dmg)
-            print(player.name, "attacked", enemies[target].name, "for", dmg, "points of damage.")
+        print("Loading done.")
 
-            if enemies[target].hp == 0:
-                del enemies[target]
-        elif index == 1:
-            magicChoice = player.chooseMagic()
-            if magicChoice == -1:
-                back = len(players) + len(enemies) - 1
-                continue
+        #time.sleep(2)
 
-            spell = player.magic[magicChoice]
-            magicHp = spell.generateDamage()
-            cost = spell.cost
+        print("Starting fight!")
 
-            currentMp = player.getMp()
+        #time.sleep(3)
 
-            if cost > currentMp:
-                print(Bcolors.FAIL + "\nNot enough MP!", player.name, "has only", str(player.getMp()) + "\\" + str(player.getMaxMp()) + "\n" + Bcolors.ENDC)
-                back = len(players) + len(enemies) - 1
-                continue
+        while fight:
             
-            player.reduceMp(cost)
 
-            if spell.type == "white":
-                player.heal(magicHp)
-                print(Bcolors.OKBLUE + "\n" + player.name + " casts " + spell.name + " and heals", player.name, "for", str(magicHp), "health points." + Bcolors.ENDC)
-            elif spell.type == "black":
-                target = player.chooseTarget(enemies)
-                if target == -1:
-                    back = len(players) + len(enemies) - 1
-                    continue
-                enemies[target].takeDamage(magicHp)
-                print(Bcolors.OKBLUE + "\n" + player.name + " casts " + spell.name + " and attacks", enemies[target].name, "for", str(magicHp), "points of damage." + Bcolors.ENDC)
-                if enemies[target].hp == 0:
-                    del enemies[target]
-        elif index == 2:
-            itemChoice = player.chooseItem()
-            if itemChoice == -1:
-                back = len(players) + len(enemies) - 1
-                continue
+            message.playerTurn()
+
+            for player in alivePlayers:
+                stats.getStats(alivePlayers, aliveEnemies)
+                print("Current character: " + player.name)
+                takenAction = False
+                while not takenAction:
+                    menu.display("Actions", actionElements)
+                    actionChoice = menu.getChoice(actionElements, "Choose action")
+                    attack = False
+                    normalAttack = False
+                    heal = False
+                    elixer = False
+
+                    if actionChoice == 3:
+                        print("Players: ")
+                        stats.getAttrs(alivePlayers)
+                        print("Enemies:")
+                        stats.getAttrs(aliveEnemies)
+                        continue
+
+                    elif actionChoice == 0:
+                        value = player.getAtk()
+                        attack = True
+                        normalAttack = True
+                    elif actionChoice == 1:
+                        playerSpells = player.getSpells()
+                        if not playerSpells:
+                            continue
+
+                        spellsName = []
+                        for i in playerSpells:
+                            spellsName.append(spells[i].getName() + " (value: " + str(spells[i].getValue())
+                                            + ", cost: " + str(spells[i].getCost()) + ")")
+                        spellsName.append("Back")
+
+                        menu.display("Spells", spellsName)
+                        spellChoice = menu.getChoice(spellsName, "Choose spell")
+
+                        if spellChoice == len(spellsName) - 1:
+                            continue
+
+                        chosenSpell = spells[playerSpells[spellChoice]]
+                        casted = actions.castSpell(player, chosenSpell, True)
+
+                        if not casted:
+                            continue
+                        elif casted:
+                            value = chosenSpell.getValue()
             
-            item = player.items[itemChoice]
+                        if chosenSpell.getSchool() == "attack":
+                            attack = True
+                        elif chosenSpell.getSchool() == "white":
+                            heal = True
+                    elif actionChoice == 2:
+                        playerItems = player.getItems()
+                        if not playerItems:
+                            continue
+                        itemsName = []
+                        for i in playerItems:
+                            itemsName.append(items[i["id"]].getName()
+                                            + " (" + str(i["quantity"]) + "x)")
+                        itemsName.append("Back")
+
+                        menu.display("Items", itemsName)
+                        itemChoice = menu.getChoice(itemsName, "Choose item")
+                        
+                        if itemChoice == len(itemsName) - 1:
+                            continue
+                        
+                        chosenItem = ItemManager(items[playerItems[itemChoice]["id"]],
+                                                playerItems[itemChoice]["quantity"])
+                        
+                        used = actions.useItem(player, chosenItem, itemChoice, True)
+
+                        if not used:
+                            continue
+                        else:
+                            value = chosenItem.getItem().getValue()
+                        
+                        if chosenItem.getItem().getType() == "potion":
+                            heal = True
+                        elif chosenItem.getItem().getType() == "attack":
+                            attack = True
+                        elif chosenItem.getItem().getType() == "elixer":
+                            elixer = True
+
+
+                    if attack == True:
+                        enemiesName = []
+                        for enemy in aliveEnemies:
+                            enemiesName.append(enemy.getName())
+                        enemiesName.append("Back")
+
+                        menu.display("Enemies", enemiesName)
+                        enemyChoice = menu.getChoice(enemiesName, "Choose enemy")
+
+                        if enemyChoice == len(enemiesName) - 1:
+                            continue
+                        
+                        if normalAttack:
+                            defense = round(aliveEnemies[enemyChoice].getDf() / 50)
+                            if defense == 0:
+                                defense = 1
+                            
+                            value = round(value / defense)
+                            
+
+                        actions.attack(player, aliveEnemies[enemyChoice], value)
+                    elif heal == True:
+                        actions.heal(player, value)
+                    elif elixer == True:
+                        actions.elixer(player)
+                    
+                    
+                    takenAction = True
+
+                deadEnemies = CheckAlive.getDead(deadEnemies, aliveEnemies, message)
+                aliveEnemies = CheckAlive.getAlive(aliveEnemies)
+
+                if not aliveEnemies:
+                    print("Won")
+                    fight = False
+                    break
             
-            if item["quantity"] == 0:
-                print(Bcolors.FAIL + "\n" + player.name, "doesn't have any", item["item"].name + "\n" + Bcolors.ENDC)
-                back = len(players) + len(enemies) - 1
-                continue
-            else:
-                player.items[itemChoice]["quantity"] -= 1
+            message.enemyTurn()
+            for enemy in aliveEnemies:
+                takenAction = False
+                while not takenAction:
+                    attack = False
+                    normalAttack = False
+                    heal = False
+                    elixer = False
+                    actionChoice = random.randint(0, 2)
+
+                    if actionChoice == 0:
+                        attack = True
+                        normalAttack = True
+                    elif actionChoice == 1:
+                        enemiesSpells = enemy.getSpells()
+                        if not enemiesSpells:
+                            continue
+                        spellChoice = random.randrange(0, len(enemiesSpells))
+
+                        chosenSpell = spells[enemiesSpells[spellChoice]]
+
+                        if chosenSpell.getSchool() == "white" and enemy.getHp() >= enemy.getMaxHp() * 0.9:
+                            continue
+
+                        casted = actions.castSpell(enemy, chosenSpell)
+
+                        if not casted:
+                            continue
+                        elif casted:
+                            value = chosenSpell.getValue()
             
-            if item["item"].type == "potion":
-                player.heal(item["item"].prop)
-                print(Bcolors.OKGREEN + "\n" + item["item"].name + " heals " + player.name + " for", str(item["item"].prop), "HP" + Bcolors.ENDC)
-            elif item["item"].type == "elixer":
-                if item["item"].name == "Hi-Elixer":
-                    for i in players:
-                        i.hp = i.maxHp
-                        i.mp = i.maxMp
-                    print(Bcolors.OKGREEN + "\n" + item["item"].name + " fully restores everybody's HP and MP" + Bcolors.ENDC)
-                else:
-                    player.hp = player.maxHp
-                    player.mp = player.maxMp
-                    print(Bcolors.OKGREEN + "\n" + item["item"].name + " fully restores " + player.name + "'s HP and MP" + Bcolors.ENDC)
-            elif item["item"].type =="attack":
-                target = player.chooseTarget(enemies)
-                if target == -1:
-                    back = len(players) + len(enemies) - 1
-                    continue
-                enemies[target].takeDamage(item["item"].prop)
-                print(Bcolors.OKGREEN + "\n" + player.name + " uses " + item["item"].name + " and attacjs", enemies[target].name, "for", str(item["item"].prop), "points of damage." + Bcolors.ENDC)
-                if enemies[target].hp == 0:
-                    del enemies[target]
+                        if chosenSpell.getSchool() == "attack":
+                            attack = True
+                        elif chosenSpell.getSchool() == "white":
+                            heal = True
+                    elif actionChoice == 2:
+                        enemyItems = enemy.getItems()
+                        if not enemyItems:
+                            continue
 
-    for enemy in enemies:
-        if back > 0:
-            back -=1
-            continue
+                        itemChoice = random.randrange(0, len(enemyItems))
+                        
+                        chosenItem = ItemManager(items[enemyItems[itemChoice]["id"]],
+                                                enemyItems[itemChoice]["quantity"])
+                        
+                        
+                        if enemy.getHp() >= enemy.getMaxHp() * 0.9:
+                            enoughHp = False
+                        else:
+                            enoughHp = True
 
-        if enemy.getHp():
-            enemyChoice = random.randrange(0, 3)
-            
-            if enemyChoice == 0:
-                enemyDmg = enemy.generateDamage()
-                hitPlayer = random.randrange(0, len(players))
-                players[hitPlayer].takeDamage(enemyDmg)
-                print(Bcolors.BOLD + Bcolors.FAIL + "Enemy attacks", players[hitPlayer].name, "for", str(enemyDmg), "points of damage." + Bcolors.ENDC)
-                if players[hitPlayer].hp == 0:
-                        del players[hitPlayer]
-            elif enemyChoice == 1:
-                if not enemy.magic:
-                    back = len(players) + len(enemies) - 1
-                    continue
+                        if enemy.getMp() >= enemy.getMaxMp() * 0.9:
+                            enoughMp = False
+                        else:
+                            enoughMp = True
 
-                magicChoice = random.randrange(0, len(enemy.magic))
+                        if chosenItem.getItem().getType() == "Potion" and not enoughHp:
+                            continue
+                        elif chosenItem.getItem().getType() == "Elixer" and (not enoughHp or not enoughMp):
+                            continue
 
-                while enemy.magic[magicChoice].type == "white" and enemy.hp >= int((enemy.maxHp / 80)):
-                    magicChoice = random.randrange(0, len(enemy.magic))
+                        used = actions.useItem(enemy, chosenItem, itemChoice)
 
-                spell = enemy.magic[magicChoice]
-                magicHp = spell.generateDamage()
-                cost = spell.cost
+                        if not used:
+                            continue
+                        else:
+                            value = chosenItem.getItem().getValue()
+                        
+                        if chosenItem.getItem().getType() == "potion":
+                            heal = True
+                        elif chosenItem.getItem().getType() == "attack":
+                            attack = True
+                        elif chosenItem.getItem().getType() == "elixer":
+                            elixer = True
 
-                currentMp = enemy.getMp()
-
-                if cost > currentMp:
-                    back = len(players) + len(enemies) - 1
-                    continue
+                    time.sleep(1)
+                    if attack == True:
+                        target = random.randrange(0, len(alivePlayers))
+                        
+                        if normalAttack:
+                            defense = round(alivePlayers[target].getDf() / 50)
+                            if defense == 0:
+                                defense = 1
+                            
+                            value = round(value / defense)
+                            
+                        actions.attack(enemy, alivePlayers[target], value)
+                    elif heal == True:
+                        actions.heal(enemy, value)
+                    elif elixer == True:
+                        actions.elixer(enemy)
+                    
+                    takenAction = True
                 
-                enemy.reduceMp(cost)
+                deadPlayers = CheckAlive.getDead(deadPlayers, alivePlayers, message)
+                alivePlayers = CheckAlive.getAlive(alivePlayers)
 
-                if spell.type == "white":
-                    enemy.heal(magicHp)
-                    print(Bcolors.OKBLUE + "\n" + enemy.name + " casts " + spell.name + " and heals", enemy.name, "for", str(magicHp), "health points." + Bcolors.ENDC)
-                elif spell.type == "black":
-                    target = random.randrange(0, len(players))
-                    players[target].takeDamage(magicHp)
-                    print(Bcolors.FAIL + "\n" + enemy.name + " casts " + spell.name + " and attacks", players[target].name, "for", str(magicHp), "points of damage." + Bcolors.ENDC)
-                    if players[target].hp == 0:
-                        del players[target]
-            elif enemyChoice == 2:
-                if not enemy.items:
-                    back = len(players) + len(enemies) - 1
-                    continue
+                if not alivePlayers:
+                    print("Lose")
+                    fight = False
+                    break
 
-                itemChoice = random.randrange(0, len(enemy.items))
-                
-                while (enemy.items[itemChoice].type == "potion" or enemy.items[itemChoice.type == "elixer"]) and enemy.hp >= int((enemy.maxHp / 80)):
-                    magicChoice = random.randrange(0, len(enemy.magic))
-                
-                item = enemy.items[itemChoice]
-                
-                if item["quantity"] == 0:
-                    back = len(players) + len(enemies) - 1
-                    continue
-                else:
-                    enemy.items[itemChoice]["quantity"] -= 1
-                
-                if item["item"].type == "potion":
-                    enemy.heal(item["item"].prop)
-                    print(Bcolors.OKGREEN + "\n" + item["item"].name + " heals " + enemy.name + " for", str(item["item"].prop), "HP" + Bcolors.ENDC)
-                elif item["item"].type == "elixer":
-                    if item["item"].name == "Hi-Elixer":
-                        for i in enemies:
-                            i.hp = i.maxHp
-                            i.mp = i.maxMp
-                        print(Bcolors.OKGREEN + "\n" + item["item"].name + " fully restores every enemy's HP and MP" + Bcolors.ENDC)
-                    else:
-                        enemy.hp = enemy.maxHp
-                        enemy.mp = enemy.maxMp
-                        print(Bcolors.OKGREEN + "\n" + item["item"].name + " fully restores " + enemy.name + "'s HP and MP" + Bcolors.ENDC)
-                elif item["item"].type =="attack":
-                    target = random.randrange(0, len(players))
-                    players[target].takeDamage(item["item"].prop)
-                    print(Bcolors.OKGREEN + "\n" + enemy.name + " uses " + item["item"].name + " and attacks", players[target].name, "for", str(item["item"].prop), "points of damage." + Bcolors.ENDC)
-                    if players[target].hp == 0:
-                        del players[target]
-
-    if enemy1.getHp() == 0 and enemy2.getHp() == 0 and enemy3.getHp() == 0:
-        enemiesAlive = False
-        print(Bcolors.OKGREEN + "You won!" + Bcolors.ENDC)
-    elif player1.getHp() == 0 and player2.getHp() == 0 and player3.getHp() == 0:
-        playersAlive = False
-        print(Bcolors.FAIL + "You lose!" + Bcolors.ENDC)
-
-    if playersAlive == False or enemiesAlive == False:
+    
+    elif mainMenuChoice == 1:
+        print("\nActually there is no help. :)\n")
+    
+    elif mainMenuChoice == 2:
         running = False

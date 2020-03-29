@@ -1,19 +1,160 @@
 import random
 import math
 
-class Person:
-    def __init__(self, name, hp, mp, atk, df, magic, items):
+class CharacterInterface:
+    def __init__(self, name, hp, mp, atk, df, spells, items):
+        raise NotImplementedError
+
+    def getName(self):
+        raise NotImplementedError
+
+    def setName(self, name):
+        raise NotImplementedError
+
+    def getMaxHp(self):
+        raise NotImplementedError
+    
+    def setMaxHp(self, maxHp):
+        raise NotImplementedError
+
+    def getHp(self):
+        raise NotImplementedError
+
+    def setHp(self, hp):
+        raise NotImplementedError
+
+    def getMaxMp(self):
+        raise NotImplementedError
+    
+    def setMaxMp(self, maxMp):
+        raise NotImplementedError
+    
+    def getMp(self):
+        raise NotImplementedError
+
+    def setMp(self, mp):
+        raise NotImplementedError
+    
+    def getAtk(self):
+        raise NotImplementedError
+    
+    def setAtk(self, atk):
+        raise NotImplementedError
+
+    def getDf(self):
+        raise NotImplementedError
+
+    def setDf(self, df):
+        raise NotImplementedError
+    
+    def getSpells(self):
+        raise NotImplementedError
+    
+    def setSpells(self, spells):
+        raise NotImplementedError
+    
+    def getItems(self):
+        raise NotImplementedError
+    
+    def setItems(self, items):
+        raise NotImplementedError
+    
+    def getItemsQuantity(self, i):
+        raise NotImplementedError
+
+    def setItemsQuantity(self, i, value):
+        raise NotImplementedError
+
+class Character(CharacterInterface):
+    def __init__(self, name, hp, mp, atk, df, spells, items):
         self.name = name
         self.maxHp = hp
         self.hp = hp
         self.maxMp = mp
         self.mp = mp
-        self.atkl = atk - 10
-        self.atkh = atk + 10
+        self.atk = atk
         self.df = df
-        self.magic = magic
+        self.spells = spells
         self.items = items
-        self.actions = ['Attack', 'Magic', 'Items']
+    
+    def getName(self):
+        return self.name
+    
+    def setName(self, name):
+        self.name = name
+        return self
+
+    def getMaxHp(self):
+        return self.maxHp
+    
+    def setMaxHp(self, maxHp):
+        self.maxHp = maxHp
+        return self
+
+    def getHp(self):
+        return self.hp
+
+    def setHp(self, hp):
+        if hp > self.maxHp:
+            self.hp = self.maxHp
+        elif hp < 0:
+            self.hp = 0
+        else:
+            self.hp = hp
+        return self
+
+    def getMaxMp(self):
+        return self.maxMp
+    
+    def setMaxMp(self, maxMp):
+        self.maxMp = maxMp
+        return self
+    
+    def getMp(self):
+        return self.mp
+
+    def setMp(self, mp):
+        if mp > self.maxMp:
+            self.mp = self.maxMp
+        else:
+            self.mp = mp
+        return self
+    
+    def getAtk(self):
+        return self.atk
+    
+    def setAtk(self, atk):
+        self.atk = atk
+        return self
+
+    def getDf(self):
+        return self.df
+
+    def setDf(self, df):
+        self.df = df
+        return self
+    
+    def getSpells(self):
+        return self.spells
+    
+    def setSpells(self, spells):
+        self.spells = spells
+        return self
+    
+    def getItems(self):
+        return self.items
+    
+    def setItems(self, items):
+        self.items = items
+        return self
+    
+    def getItemsQuantity(self, i):
+        return self.items[i]["quantity"]
+
+    def setItemsQuantity(self, i, value):
+        self.items[i]["quantity"] = value
+        return self
+'''
     
     def generateDamage(self):
         return random.randrange(self.atkl, self.atkh)
@@ -28,18 +169,6 @@ class Person:
         if(self.hp < 0):
             self.hp = 0
         return self.hp
-    
-    def getHp(self):
-        return self.hp
-    
-    def getMaxHp(self):
-        return self.maxHp
-    
-    def getMp(self):
-        return self.mp
-    
-    def getMaxMp(self):
-        return self.maxMp
     
     def reduceMp(self, cost):
         self.mp -= cost
@@ -234,3 +363,4 @@ class Person:
         print(name
             + Bcolors.FAIL + currentHp + " |" + hpBar + "|  "
             + Bcolors.ENDC)
+'''
