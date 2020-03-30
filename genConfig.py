@@ -68,8 +68,8 @@ players = [{
         "name": "YourMama",
         "hp": 3260,
         "mp": 65,
-        "atk": 60,
-        "df": 34,
+        "atk": 100,
+        "df": 60,
         "spells": [0, 1, 2, 3, 4],
         "items": [{
                 "id": 0,
@@ -91,10 +91,10 @@ players = [{
     },
     {
         "name": "Moron",
-        "hp": 300,
+        "hp": 1200,
         "mp": 20,
-        "atk": 400,
-        "df": 90,
+        "atk": 500,
+        "df": 120,
         "spells": [3],
         "items": [{
                 "id": 0,
@@ -116,10 +116,10 @@ players = [{
     },
     {
         "name": "SmartBoy",
-        "hp": 1200,
-        "mp": 200,
-        "atk": 30,
-        "df": 40,
+        "hp": 1500,
+        "mp": 240,
+        "atk": 25,
+        "df": 35,
         "spells": [0, 1, 2, 3, 4],
         "items": [{
                 "id": 0,
@@ -143,7 +143,7 @@ players = [{
         "name": "Nick",
         "hp": 2000,
         "mp": 100,
-        "atk": 100,
+        "atk": 200,
         "df": 25,
         "spells": [0, 1, 2, 3, 4],
         "items": [{
@@ -168,9 +168,9 @@ players = [{
 
 enemies = [{
         "name": "BadAss",
-        "hp": 30000,
+        "hp": 9000,
         "mp": 100,
-        "atk": 300,
+        "atk": 400,
         "df": 100,
         "spells": [0, 1, 2, 3, 4],
         "items": [{

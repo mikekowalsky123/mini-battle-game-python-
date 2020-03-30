@@ -130,7 +130,7 @@ class MessageGenerator(MessageGeneratorInterface):
         print("\t" + str(index) + ". " + message)
     
     def statElement(self, name, hpTopBar, mpTopBar, hpBar, mpBar, hp, mp):
-        cprint("                            " + hpTopBar, "red", attrs=['bold'], end="              ")
+        cprint("                            " + hpTopBar, "red", attrs=['bold'], end="                ")
         cprint(mpTopBar, "blue", attrs=['bold'])
         cprint(name, "white", attrs=['bold'], end="")
         cprint(hp + " |" + hpBar + "|", "red", attrs=['bold'], end="  ")
@@ -181,7 +181,7 @@ class CompatiblityMessageGenerator(MessageGeneratorInterface):
         print("\t" + str(index) + ". " + message)
     
     def statElement(self, name, hpTopBar, mpTopBar, hpBar, mpBar, hp, mp):
-        print("                            " + hpTopBar, end="              ")
+        print("                            " + hpTopBar, end="                ")
         print(mpTopBar)
         print(name, end="")
         print(hp + " |" + hpBar + "|", end="  ")
@@ -230,7 +230,11 @@ class Menu(MenuInterface):
     def getChoice(self, elements, toPrompt):
         correct = False
         while not correct:
-            choice = int(input(toPrompt + ": ")) - 1
+            choice = input(toPrompt + ": ")
+            if not choice:
+                continue
+            else:
+                choice = int(choice) - 1
             
             if choice >= 0 and choice < len(elements):
                 correct = True
@@ -300,8 +304,10 @@ class Statistics():
         self.message.statElement(name, hpTopBar, mpTopBar, hpBar, mpBar, currentHp, currentMp)
     
     def getStats(self, players, enemies):
+        self.message.players()
         for player in players:
             self.generateStat(player)
+        self.message.enemies()
         for enemy in enemies:
             self.generateStat(enemy)
     
